@@ -2028,7 +2028,8 @@ zh:['在线游戏','创建房间','加入','房间代码','房间','复制链接
 const nt=i=>(NT[lang]||NT.en)[i];
 const Net={on:false,host:false,code:'',peer:null,pl:[],st:null,conn:null,ctl:'ui',snap:{},hostW:16,hostH:9,tile:{x:0,y:0,w:1,h:1},myId:null};
 const MIRROR=['mmap','podDark','dropBtn','flapBtn','hud','banner','reticle','tgt','speedo','gauge','spUI','intro','results','ready','pause'];
-const peerCfg=()=>window.__peerCfg||{debug:0};
+let netIce=null;const peerCfg=()=>window.__peerCfg||{debug:0,...(netIce?{config:{iceServers:netIce}}:{})};
+const getIce=async()=>{if(netIce||window.__peerCfg)return;try{const r=await fetch('/api/turn');if(r.ok){const j=await r.json();if(j.iceServers?.length)netIce=[{urls:'stun:stun.l.google.com:19302'},...j.iceServers]}}catch(e){}};
 const NFAIL={es:'No se pudo conectar. Pedile al anfitrión que deje el juego abierto en primer plano y probá de nuevo. Si sigue, probá con otra red (wifi o datos).',en:'Could not connect. Ask the host to keep the game open on screen and try again. If it persists, try another network.'};
 const netPid=c=>'titolimpiadas-'+c.toLowerCase();
 const netKeyFix=h=>{for(const id in portraits)h=h.split(portraits[id]).join('@@'+id+'@@');return h};
@@ -2061,7 +2062,7 @@ $('#netBack').onclick=()=>{netShow('');show('title')};
 $('#netNew').onclick=()=>netHost();
 $('#netJoin').onclick=()=>{const c=$('#netCode').value.trim().toUpperCase();if(c.length===4)netJoin(c)};
 /* ---- anfitrión ---- */
-function netHost(tries=0){const c=Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(rnd(24))]).join('');const p=new Peer(netPid(c),peerCfg());$('#netErr').textContent=nt(14);
+async function netHost(tries=0){await getIce();const c=Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(rnd(24))]).join('');const p=new Peer(netPid(c),peerCfg());$('#netErr').textContent=nt(14);
  p.on('error',e=>{if(e.type==='unavailable-id'&&tries<5)return netHost(tries+1);if(!Net.on)$('#netErr').textContent=String(e.type||e)});
  p.on('disconnected',()=>{if(!p.destroyed)try{p.reconnect()}catch(e){}});p.on('open',()=>{if(Net.on)return;Net.on=Net.host=true;try{navigator.wakeLock?.request('screen').catch(()=>{})}catch(e){}addEventListener('visibilitychange',()=>{if(!document.hidden){if(p.disconnected&&!p.destroyed)try{p.reconnect()}catch(e){}try{navigator.wakeLock?.request('screen').catch(()=>{})}catch(e){}}});Net.code=c;Net.peer=p;touch=false;Sfx.init();Net.pl=[{id:'yara',st:{x:0,y:0,a:0,b:0},keys:{},local:true}];
   const sv=canvas2stream();Net.stream=sv;G.slots={yara:'hum',trompa:'cpu',nata:'cpu',bolita:'off'};netShow('');G.phase='menu';buildMenu();show('menu');netBarDraw();if(matchMedia('(pointer:coarse)').matches){Net.pad=true;document.body.classList.add('nphone')}setInterval(netSend,120)});
@@ -2097,7 +2098,7 @@ addEventListener('pointermove',npM);
 const npU=e=>{if(e.pointerId!==npP)return;npP=null;npSt.x=npSt.y=0;$('#npS i').style.transform='';npOut()};addEventListener('pointerup',npU);addEventListener('pointercancel',npU);
 for(const [id,k] of [['#npA','a'],['#npB','b']]){const b=$(id);let pid=null;b.addEventListener('pointerdown',e=>{pid=e.pointerId;npSt[k]=1;npOut()});const up=e=>{if(e.pointerId!==pid)return;pid=null;npSt[k]=0;npOut()};addEventListener('pointerup',up);addEventListener('pointercancel',up)}
 /* ---- invitado ---- */
-function netJoin(c){$('#netErr').textContent=nt(14);Net.code=c;netShow('netL');show('none');netLobbyDraw({taken:[]});$('#netLW').textContent=nt(14);const p=new Peer(peerCfg());Net.peer=p;let tries=0,to=0,cn=null;
+async function netJoin(c){$('#netErr').textContent=nt(14);Net.code=c;netShow('netL');show('none');netLobbyDraw({taken:[]});$('#netLW').textContent=nt(14);await getIce();const p=new Peer(peerCfg());Net.peer=p;let tries=0,to=0,cn=null;
  const fail=t=>{clearTimeout(to);if(G.netGuest&&Net.live)netLost();else{netShow('netS');netText();$('#netErr').textContent=t}};
  const attempt=()=>{clearTimeout(to);if(Net.live)return;if(tries++>=8)return fail(NFAIL[lang]||NFAIL.en);try{cn&&cn.close()}catch(e){}cn=p.connect(netPid(c),{reliable:true,serialization:'json'});Net.conn=cn;const my=cn;cn.on('open',()=>{clearTimeout(to);if(my!==Net.conn)return;Net.on=true;Net.live=true;netGuestStart()});cn.on('data',netRx);cn.on('close',()=>{if(Net.live&&my===Net.conn)netLost()});to=setTimeout(()=>{tries=99;attempt()},40000);clearInterval(Net.st8);Net.st8=setInterval(()=>{if(Net.live)return clearInterval(Net.st8);const pc=cn?.peerConnection;$('#netLW').textContent=nt(14)+' ['+(pc?pc.iceConnectionState:'…')+']'},1000)};
  p.on('error',e=>{if(e.type==='peer-unavailable'){clearTimeout(to);to=setTimeout(attempt,2500);return}if(!Net.live&&e.type==='network')return;if(!Net.live&&e.type!=='connection-closed')fail(String(e.type||e))});
