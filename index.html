@@ -1223,7 +1223,7 @@ const pegRing=ring,SWL=1.75,Esc=Object.assign(Object.defineProperties({},Object.
  exit(){world.visible=true;(this.hid||[]).forEach(q=>q.visible=true);this.hid=null;moodReset();tito.reset();tito.root.position.y=-80;aimDots.visible=false;clG.visible=false;water.position.y=0;setReflect(!!this.rf);ring.visible=false;ring.scale.setScalar(1);ring.material.color.set(0xffcf4d);this.s='idle';Object.values(chars).forEach(c=>{c.free=c.lockRig=false;c.remo.visible=true;c.hands.forEach(h=>h.visible=false);c.root.add(c.rider);c.rider.position.set(-1.25,.2,0);c.rider.rotation.set(0,Math.PI,0);c.rider.scale.setScalar(.56);c.rider.visible=false;c.rig.position.y=0;c.rig.rotation.set(0,0,0);c.rig.scale.setScalar(1);c.g.rotation.set(0,0,0);c.arm.rotation.z=.15;c.armB.rotation.z=-.15})},
  startTurn(){const p=cur(),c=chars[p.id];Object.values(chars).forEach(q=>q.g.visible=false);c.g.visible=true;c.g.scale.setScalar(1);this.p=p;this.c=c;this.handY=(c.shY??1.75)+.86;this.i=0;this.top=0;this.ph=rnd(TAU);this.h=-5;this.T=0;water.position.y=this.h;this.s='swing';this.airK={};this.cpuBad=undefined;this.cpuW=rnd(.5,1.2);this.dr=1;this.lag=0;this.lagV=0;this.sq=0;this.sv=0;this.fw=1;this.face=1;this.rz=0;tito.reset();tito.root.scale.setScalar(.8);this.tp=3;this.tm=0;this.titoAt(this.tp);ring.visible=true;ring.rotation.x=0;ring.scale.setScalar(.82);$('#meter').textContent='0 m';$('#sub').textContent=p.best?tr('best',{a:p.best.toFixed(0)}):'';prompt_(p.cpu?'':tr('es_p'))},
  titoAt(i){const q=this.pegs[Math.min(i,PEGN-1)];this.tq=new THREE.Vector3(CX+q.x,q.y+.75,2.4);if(!this.tm)tito.root.position.copy(this.tq)},
- w(){return 5.1+Math.min(this.top/3.5,30)*.05},
+ w(){return 5.9+Math.min(this.top/3.5,30)*.05},
  nxt(){const i=this.i,q=this.pegs[i];if(i<PEGM-1)return this.pegs[i+1];let b=this.pegs[PEGM-1],bd=1e9;for(let k=0;k<PEGM;k++){const p=this.pegs[k];if(p.y>q.y+1){const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<bd){bd=d;b=p}}}return b},
  st(){const q=this.pegs[this.i],a=this.ph,V=12.4,dr=this.dr;return {x:q.x+Math.sin(a)*SWL,y:q.y-Math.cos(a)*SWL,a,da:dr*this.w(),vx:Math.cos(a)*dr*V,vy:Math.sin(a)*dr*V}},
  press(e){if(this.s==='swing'){const L=tapLag();if(L)this.ph-=this.dr*L*this.w();this.s='wind';this.wt=.02;G.pressed=false;return}if(this.s==='air')G.pressed=true},
@@ -1240,7 +1240,7 @@ const pegRing=ring,SWL=1.75,Esc=Object.assign(Object.defineProperties({},Object.
   // resortes para squash & stretch y para el arrastre de las piernas
   this.sv+=(-this.sq*130-this.sv*10)*dt;this.sq+=this.sv*dt;
   let tuck=0,bx=0,by=0,kick=0;
-  if(this.s==='swing'||this.s==='wind'){if(this.s==='swing')this.ph+=this.dr*dt*this.w();const s=this.st();const q=this.pegs[this.i];c.g.position.set(CX+q.x,q.y,3);c.g.rotation.z=s.a;bx=s.x;by=s.y;
+  if(this.s==='swing'||this.s==='wind'){if(this.s==='swing')this.ph+=this.dr*dt*this.w()*(.5+.85*(1+Math.cos(this.ph))/2);const s=this.st();const q=this.pegs[this.i];c.g.position.set(CX+q.x,q.y,3);c.g.rotation.z=s.a;bx=s.x;by=s.y;
    this.lagV+=(s.da-this.lag)*28*dt;this.lagV*=1-7*dt;this.lag+=this.lagV*dt;kick=clamp(-this.lag*.05,-.3,.3);this.face=damp(this.face,s.da>0?1:-1,Math.abs(s.da)<1.2?34:60,dt);
    {let x=s.x,y=s.y,vy=s.vy;const D=new THREE.Object3D();for(let k=0;k<7;k++){x+=s.vx*.05;vy-=18*.05;y+=vy*.05;D.position.set(CX+x,y,3);D.scale.setScalar(1-k*.1);D.updateMatrix();aimDots.setMatrixAt(k,D.matrix)}aimDots.instanceMatrix.needsUpdate=true;aimDots.visible=true}
    if(this.s==='wind'){tuck=0;this.wt-=dt;if(this.wt<=0)this.launch()}
